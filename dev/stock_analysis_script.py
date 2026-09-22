@@ -838,26 +838,36 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
     # --- Đường giá tham chiếu: Hiện tại (cam) / Take Profit (xanh lá) / Cut Loss (đỏ) ---
     # Đều là nét đứt mảnh (linewidth nhỏ) để không lấn át nến & kênh giá, đặt zorder cao để
     # luôn hiển thị phía trên vùng tô bóng kênh.
+    # Nhãn được đặt HẲN RA NGOÀI khung biểu đồ (bên phải trục), dùng transform kết hợp
+    # (trục X theo tỷ lệ axes 0-1, trục Y theo giá trị data thực) để không còn che các
+    # nến/annotation cuối chuỗi như trước (khi neo nhãn bên trong vùng future_bars).
+    # `clip_on=False` bắt buộc để nhãn không bị cắt bởi biên axes; `bbox_inches="tight"`
+    # khi savefig() sẽ tự mở rộng khung ảnh để chứa trọn phần nhãn nhô ra ngoài này.
     if rec:
         current_price = rec.get("current_price") or float(df_ind.iloc[-1]["Close"])
         tp_ref = rec.get("tp_ref")
         cutoff_ref = rec.get("cutoff_ref")
+        label_transform = ax1.get_yaxis_transform()  # (axes fraction X, data Y)
+        label_x = 1.012
 
         ax1.axhline(y=current_price, color="orange", linestyle="--", linewidth=1.0, alpha=0.9, zorder=6)
-        ax1.text(n + future_bars - 0.5, current_price, f"Giá hiện tại: {current_price:,.0f}",
-                 fontsize=7.5, color="darkorange", fontweight="bold", va="center", ha="right", zorder=7,
+        ax1.text(label_x, current_price, f"Giá hiện tại: {current_price:,.0f}",
+                 transform=label_transform, clip_on=False,
+                 fontsize=7.5, color="darkorange", fontweight="bold", va="center", ha="left", zorder=7,
                  bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.8))
 
         if tp_ref:
             ax1.axhline(y=tp_ref, color="green", linestyle="--", linewidth=1.0, alpha=0.9, zorder=6)
-            ax1.text(n + future_bars - 0.5, tp_ref, f"Take Profit: {tp_ref:,.0f}",
-                     fontsize=7.5, color="green", fontweight="bold", va="center", ha="right", zorder=7,
+            ax1.text(label_x, tp_ref, f"Take Profit: {tp_ref:,.0f}",
+                     transform=label_transform, clip_on=False,
+                     fontsize=7.5, color="green", fontweight="bold", va="center", ha="left", zorder=7,
                      bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.8))
 
         if cutoff_ref:
             ax1.axhline(y=cutoff_ref, color="red", linestyle="--", linewidth=1.0, alpha=0.9, zorder=6)
-            ax1.text(n + future_bars - 0.5, cutoff_ref, f"Cut Loss: {cutoff_ref:,.0f}",
-                     fontsize=7.5, color="red", fontweight="bold", va="center", ha="right", zorder=7,
+            ax1.text(label_x, cutoff_ref, f"Cut Loss: {cutoff_ref:,.0f}",
+                     transform=label_transform, clip_on=False,
+                     fontsize=7.5, color="red", fontweight="bold", va="center", ha="left", zorder=7,
                      bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.8))
 
     # --- Fibonacci Retracement/Extension cho nhịp sóng breakout ---
