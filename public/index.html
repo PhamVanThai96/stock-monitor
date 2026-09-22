@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YH Fin Monitor - Phân tích kỹ thuật cổ phiếu</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --accent-dark: #0284c7;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --buy: #22c55e;
+    --sell: #ef4444;
+    --hold: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.subtitle { color: var(--muted); margin-top: 0; }
+  .card {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  label { display: block; margin-bottom: 6px; font-weight: 600; }
+  textarea, select, input[type="text"] {
+    width: 100%;
+    background: #0f172a;
+    color: var(--text);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+  .row .field { flex: 1; min-width: 160px; }
+  button#startBtn {
+    margin-top: 18px;
+    background: var(--accent);
+    color: #04263a;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button#startBtn:hover { background: var(--accent-dark); color: #fff; }
+  button#startBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+  #status { margin-top: 10px; color: var(--muted); font-size: 0.9rem; white-space: pre-line; }
+  .result-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .result-card { border-left: 5px solid var(--muted); }
+  .result-card.action-MUA { border-left-color: var(--buy); }
+  .result-card.action-BÁN { border-left-color: var(--sell); }
+  .result-card.action-THEO { border-left-color: var(--hold); }
+  .result-card.error { border-left-color: var(--sell); }
+  .result-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  .ticker { font-size: 1.2rem; font-weight: 700; }
+  .action-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .action-badge.MUA { background: rgba(34,197,94,0.15); color: var(--buy); }
+  .action-badge.BÁN { background: rgba(239,68,68,0.15); color: var(--sell); }
+  .action-badge.THEO-DÕI, .action-badge.default { background: rgba(245,158,11,0.15); color: var(--hold); }
+  .meta { color: var(--muted); font-size: 0.9rem; margin: 6px 0 12px; }
+  ul.reasons { margin: 0; padding-left: 18px; font-size: 0.92rem; }
+  ul.reasons li { margin-bottom: 4px; }
+  .chart-wrap img { width: 100%; border-radius: 8px; margin-top: 10px; display: block; }
+  details summary { cursor: pointer; color: var(--accent); margin-top: 10px; font-size: 0.9rem; }
+  pre.mindmap { background: #0f172a; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 0.8rem; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>📈 YH Fin Monitor</h1>
+  <p class="subtitle">Nhập các mã cổ phiếu cần phân tích kỹ thuật, hệ thống sẽ gọi backend
+     (<code>dev/analysis_script.py</code> qua Netlify Function) để tạo khuyến nghị và biểu đồ.</p>
+
+  <div class="card">
+    <label for="tickers">Danh sách mã cổ phiếu (cách nhau bởi dấu phẩy hoặc xuống dòng)</label>
+    <textarea id="tickers" placeholder="SSB.VN, HPG.VN, VIC.VN, SHB.VN"></textarea>
+
+    <div class="row">
+      <div class="field">
+        <label for="period">Khoảng thời gian dữ liệu (period)</label>
+        <select id="period">
+          <option value="6mo">6 tháng</option>
+          <option value="12mo" selected>12 tháng</option>
+          <option value="24mo">24 tháng</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="interval">Khung thời gian (interval)</label>
+        <select id="interval">
+          <option value="1d" selected>Ngày (1d)</option>
+          <option value="1wk">Tuần (1wk)</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="startBtn">▶ Start Analysis</button>
+    <div id="status"></div>
+  </div>
+
+  <div id="results" class="result-grid"></div>
+
+  <script>
+    const API_ENDPOINT = "/.netlify/functions/analyze";
+
+    const startBtn = document.getElementById("startBtn");
+    const tickersEl = document.getElementById("tickers");
+    const periodEl = document.getElementById("period");
+    const intervalEl = document.getElementById("interval");
+    const statusEl = document.getElementById("status");
+    const resultsEl = document.getElementById("results");
+
+    function parseTickers(raw) {
+      return raw
+        .split(/[,\n]/)
+        .map(s => s.trim().toUpperCase())
+        .filter(Boolean);
+    }
+
+    function actionClass(action) {
+      if (!action) return "default";
+      if (action.startsWith("MUA")) return "MUA";
+      if (action.startsWith("B\u00c1N")) return "B\u00c1N";
+      return "THEO-D\u00d5I";
+    }
+
+    function renderReasons(reasons) {
+      if (!reasons || !reasons.length) return "";
+      return `<ul class="reasons">${reasons.map(r => `<li>${r}</li>`).join("")}</ul>`;
+    }
+
+    function renderResult(item) {
+      const wrap = document.createElement("div");
+      wrap.className = "card result-card";
+
+      if (!item.ok) {
+        wrap.classList.add("error");
+        wrap.innerHTML = `
+          <div class="result-header">
+            <span class="ticker">${item.ticker}</span>
+            <span class="action-badge" style="background:rgba(239,68,68,0.15);color:#ef4444;">LỖI</span>
+          </div>
+          <p class="meta">${item.error || "Không rõ lỗi."}</p>`;
+        return wrap;
+      }
+
+      const rec = item.recommendation || {};
+      const cls = actionClass(rec.action);
+      wrap.classList.add(`action-${cls}`);
+
+      wrap.innerHTML = `
+        <div class="result-header">
+          <span class="ticker">${item.ticker}</span>
+          <span class="action-badge ${cls}">${rec.action || "N/A"}</span>
+        </div>
+        <p class="meta">
+          Giá đóng cửa: <strong>${rec.close ?? "?"}</strong> |
+          Xu hướng dài hạn: ${rec.long_term_trend ?? "?"} |
+          RSI14: ${rec.rsi ?? "?"} | MFI14: ${rec.mfi ?? "?"} | Vol x${rec.vol_ratio ?? "?"}
+        </p>
+        <p class="meta">
+          TP1: <strong>${rec.tp1 ?? "N/A"}</strong> | TP2: <strong>${rec.tp2 ?? "N/A"}</strong> |
+          Cắt lỗ: <strong>${rec.stop_loss ?? "N/A"}</strong>
+        </p>
+        ${renderReasons(rec.reasons)}
+        <div class="chart-wrap">
+          ${item.chart_image_base64
+            ? `<img src="data:image/png;base64,${item.chart_image_base64}" alt="Biểu đồ ${item.ticker}" />`
+            : "<p class=\"meta\">Không có biểu đồ.</p>"}
+        </div>
+        ${item.mindmap ? `<details><summary>Xem sơ đồ tư duy (Mermaid)</summary><pre class="mindmap">${item.mindmap}</pre></details>` : ""}
+      `;
+      return wrap;
+    }
+
+    async function startAnalysis() {
+      const tickers = parseTickers(tickersEl.value);
+      if (!tickers.length) {
+        statusEl.textContent = "⚠️ Vui lòng nhập ít nhất một mã cổ phiếu.";
+        return;
+      }
+
+      startBtn.disabled = true;
+      statusEl.innerHTML = `<span class="spinner"></span>Đang phân tích ${tickers.join(", ")}... (có thể mất vài chục giây)`;
+      resultsEl.innerHTML = "";
+
+      try {
+        const resp = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tickers,
+            period: periodEl.value,
+            interval: intervalEl.value
+          })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          statusEl.textContent = `❌ Lỗi: ${data.error || resp.statusText}`;
+          return;
+        }
+
+        statusEl.textContent = `✅ Hoàn tất phân tích ${data.results.length} mã.`;
+        data.results.forEach(item => resultsEl.appendChild(renderResult(item)));
+      } catch (err) {
+        statusEl.textContent = `❌ Không thể kết nối tới backend: ${err.message}`;
+      } finally {
+        startBtn.disabled = false;
+      }
+    }
+
+    startBtn.addEventListener("click", startAnalysis);
+  </script>
+</body>
+</html>
