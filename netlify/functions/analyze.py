@@ -38,7 +38,7 @@ for _c in _CANDIDATES:
     if os.path.isdir(_c) and _c not in sys.path:
         sys.path.insert(0, _c)
 
-from analysis_script import run_stock_analysis_skill  # noqa: E402
+from stock_analysis_script import run_stock_analysis_skill  # noqa: E402
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
