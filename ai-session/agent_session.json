@@ -1,0 +1,333 @@
+{
+  "watchlist": {
+    "SSB.VN": {
+      "last_run": "2026-09-17T13:53:45.428514+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 23450.0,
+      "last_reasons": [
+        "RSI=91.1 đã tiệm cận/vượt vùng quá mua (>=65)"
+      ]
+    },
+    "HPG.VN": {
+      "last_run": "2026-09-22T12:58:29.196074+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 21150.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "VIC.VN": {
+      "last_run": "2026-09-17T13:53:46.772323+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 241200.0,
+      "last_reasons": [
+        "Giá chưa điều chỉnh về vùng Hỗ trợ mạnh hoặc cạnh dưới kênh tăng"
+      ]
+    },
+    "SHB.VN": {
+      "last_run": "2026-09-22T12:58:32.449847+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 11650.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "STB.VN": {
+      "last_run": "2026-09-22T12:58:26.100742+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 76700.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Đủ điều kiện kỹ thuật nhưng khoảng cách cản hẹp khiến R:R (0.6) chưa đạt tối thiểu 1:2"
+      ]
+    },
+    "VCB.VN": {
+      "last_run": "2026-09-17T13:53:48.974828+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 59600.0,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - xu hướng dài hạn Giảm"
+      ]
+    },
+    "VNM.VN": {
+      "last_run": "2026-09-22T12:58:28.529764+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 61200.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá đang lơ lửng giữa kênh, chưa có điểm tựa hỗ trợ tỷ lệ R:R tối ưu"
+      ]
+    },
+    "MWG.VN": {
+      "last_run": "2026-09-22T12:58:30.418605+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 72800.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "PNJ.VN": {
+      "last_run": "2026-09-22T12:58:31.075922+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 35800.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "FPT.VN": {
+      "last_run": "2026-09-22T12:58:29.813221+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 66600.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "TCB.VN": {
+      "last_run": "2026-09-22T12:58:27.281341+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 32300.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "VJC.VN": {
+      "last_run": "2026-09-22T12:58:31.700020+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 135900.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Chỉ số RSI=70.3 tiệm cận/vượt quá mua, rủi ro mua đuổi đỉnh"
+      ]
+    },
+    "VRE.VN": {
+      "last_run": "2026-09-22T12:58:26.709863+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 25100.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - Rủi ro xu hướng giảm dài hạn (Bear Market)"
+      ]
+    },
+    "GAS.VN": {
+      "last_run": "2026-09-17T13:53:54.529274+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 88600.0,
+      "last_reasons": [
+        "Giá chưa điều chỉnh về vùng Hỗ trợ mạnh hoặc cạnh dưới kênh tăng"
+      ]
+    },
+    "MSN.VN": {
+      "last_run": "2026-09-17T13:53:55.241932+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 67700.0,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - xu hướng dài hạn Giảm"
+      ]
+    },
+    "REE.VN": {
+      "last_run": "2026-09-17T13:53:56.076108+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 45300.0,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - xu hướng dài hạn Giảm"
+      ]
+    },
+    "BID.VN": {
+      "last_run": "2026-09-17T13:53:56.767876+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 36700.0,
+      "last_reasons": [
+        "Phát hiện khả năng Phá vỡ giả (False Breakout) khỏi kênh xu hướng"
+      ]
+    },
+    "CTG.VN": {
+      "last_run": "2026-09-17T13:53:57.491070+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 31400.0,
+      "last_reasons": [
+        "Phát hiện khả năng Phá vỡ giả (False Breakout) khỏi kênh xu hướng"
+      ]
+    },
+    "HDB.VN": {
+      "last_run": "2026-09-17T13:53:58.224191+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 27600.0,
+      "last_reasons": [
+        "Giá chưa điều chỉnh về vùng Hỗ trợ mạnh hoặc cạnh dưới kênh tăng"
+      ]
+    },
+    "KDH.VN": {
+      "last_run": "2026-09-17T13:53:58.883661+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "BÁN",
+      "last_close": 15600.0,
+      "last_reasons": [
+        "Giá nằm dưới MA200 - xu hướng dài hạn Giảm"
+      ]
+    },
+    "VHM.VN": {
+      "last_run": "2026-09-22T12:58:27.812705+00:00",
+      "config": {
+        "period": "12mo",
+        "interval": "1d",
+        "candle_order": 5,
+        "lookback": 10
+      },
+      "last_action": "THEO DÕI",
+      "last_close": 69400.0,
+      "tp1": null,
+      "tp2": null,
+      "stop_loss": null,
+      "last_reasons": [
+        "Giá đang lơ lửng giữa kênh, chưa có điểm tựa hỗ trợ tỷ lệ R:R tối ưu"
+      ]
+    }
+  },
+  "last_ticker": "SHB.VN",
+  "last_run_at": "2026-09-22T12:58:32.449856+00:00"
+}
