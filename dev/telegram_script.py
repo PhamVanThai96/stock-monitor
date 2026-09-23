@@ -4,20 +4,31 @@ import json
 import requests
 
 # 1. Định nghĩa các đường dẫn cấu hình
-BASE_DIR = "/Users/phamvannam/Documents/GitHub/hello-affiliate/netify-stock-monitor"
-TOKEN_FILE = os.path.join(BASE_DIR, "dev/key/tele-bot-token.json")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOKEN_FILE = os.path.join(BASE_DIR, "dev", "key", "tele-bot-token.json")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 
 def load_telegram_config():
-    """Đọc Token và Chat ID từ file JSON cấu hình"""
+    """Đọc Token và Chat ID.
+
+    Ưu tiên biến môi trường TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID (dùng khi deploy
+    lên Render hoặc bất kỳ nền tảng nào khác, tránh commit token vào git). Nếu
+    không có biến môi trường, fallback đọc từ file JSON cấu hình (chỉ dùng khi
+    chạy local, file này đã được thêm vào .gitignore).
+    """
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        return token, chat_id
+
     try:
         with open(TOKEN_FILE, 'r', encoding='utf-8') as f:
             config = json.load(f)
-            # Giả định file JSON có cấu trúc: {"token": "...", "chat_id": "..."}
-            return config.get("bot_token"), config.get("chat_id")
+            # Giả định file JSON có cấu trúc: {"bot_token": "...", "chat_id": "..."}
+            return token or config.get("bot_token"), chat_id or config.get("chat_id")
     except Exception as e:
         print(f"❌ Lỗi khi đọc file cấu hình: {e}")
-        return None, None
+        return token, chat_id
 
 def send_stock_charts():
     """Quét thư mục output, gửi tất cả ảnh PNG qua Telegram và xóa sau khi gửi"""

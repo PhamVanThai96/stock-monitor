@@ -20,9 +20,27 @@
   body {
     margin: 0;
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    background: var(--bg);
     color: var(--text);
     padding: 24px;
+    position: relative;
+    min-height: 100vh;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: url("https://images6.alphacoders.com/800/800601.jpg") center center / cover no-repeat;
+    filter: blur(0px) brightness(0.95);
+    transform: scale(1.05);
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: var(--bg);
+    opacity: 0.5;
   }
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
   p.subtitle { color: var(--muted); margin-top: 0; }
@@ -95,7 +113,7 @@
 <body>
   <h1>📈 YH Fin Monitor</h1>
   <p class="subtitle">Nhập các mã cổ phiếu cần phân tích kỹ thuật, hệ thống sẽ gọi backend
-     (<code>dev/analysis_script.py</code> qua Netlify Function) để tạo khuyến nghị và biểu đồ.</p>
+     (<code>dev/stock_analysis_script.py</code> qua Flask API) để tạo khuyến nghị và biểu đồ.</p>
 
   <div class="card">
     <label for="tickers">Danh sách mã cổ phiếu (cách nhau bởi dấu phẩy hoặc xuống dòng)</label>
@@ -126,7 +144,7 @@
   <div id="results" class="result-grid"></div>
 
   <script>
-    const API_ENDPOINT = "/.netlify/functions/analyze";
+    const API_ENDPOINT = "/api/analyze";
 
     const startBtn = document.getElementById("startBtn");
     const tickersEl = document.getElementById("tickers");
