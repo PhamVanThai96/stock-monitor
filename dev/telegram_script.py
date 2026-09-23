@@ -11,7 +11,8 @@ import requests
 # Lấy thư mục hiện tại của file script và trỏ vào thư mục 'output' cùng cấp
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TOKEN_FILE = os.path.join(BASE_DIR, "dev", "key", "tele-bot-token.json")
-OUTPUT_DIR = os.path.join(BASE_DIR, "output")
+# OUTPUT_DIR = os.path.join(BASE_DIR, "output")
+OUTPUT_DIR = "/tmp/output"
 
 # Tự động tạo thư mục output nếu chưa có để tránh lỗi lưu file
 os.makedirs(OUTPUT_DIR, exist_ok=True)
