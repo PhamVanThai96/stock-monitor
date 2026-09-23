@@ -1253,6 +1253,10 @@ def run_stock_analysis_skill(ticker: str, period: str = "12mo", interval: str = 
     with open(session_file, "w", encoding="utf-8") as f:
         json.dump(session_state, f, ensure_ascii=False, indent=2)
 
+    # Send notification to Telegram
+    telegram_script.send_stock_charts()
+
+
     return {
         "ticker": ticker,
         "data": df_ind,
@@ -1292,6 +1296,9 @@ def run_batch_analysis(config_file: str = None) -> dict:
             )
         except Exception as e:
             errors[tk] = str(e)
+    # Send notification to Telegram
+    telegram_script.send_stock_charts()
+
     results["_errors"] = errors
     return results
 
