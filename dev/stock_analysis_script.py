@@ -45,8 +45,8 @@ from scipy.signal import argrelextrema
 import telegram_script  # Module phụ trợ gửi ảnh qua Telegram
 
 # Thiết lập thư mục gốc
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+# PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------------------
 # 1. Thu thập dữ liệu OHLCV (Khung Ngày)
