@@ -4,9 +4,18 @@ import json
 import requests
 
 # 1. Định nghĩa các đường dẫn cấu hình
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# TOKEN_FILE = os.path.join(BASE_DIR, "dev", "key", "tele-bot-token.json")
+# OUTPUT_DIR = os.path.join(BASE_DIR, "output")
+
+# Lấy thư mục hiện tại của file script và trỏ vào thư mục 'output' cùng cấp
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TOKEN_FILE = os.path.join(BASE_DIR, "dev", "key", "tele-bot-token.json")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
+
+# Tự động tạo thư mục output nếu chưa có để tránh lỗi lưu file
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 
 def load_telegram_config():
     """Đọc Token và Chat ID.
