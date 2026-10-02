@@ -33,7 +33,7 @@ from stock_analysis_script import run_stock_analysis_skill  # noqa: E402
 
 app = Flask(__name__, static_folder=PUBLIC_DIR, static_url_path="")
 
-MAX_TICKERS = 5  # Giới hạn số mã/lần gọi để tránh timeout request quá lâu.
+MAX_TICKERS = 10  # Giới hạn số mã/lần gọi để tránh timeout request quá lâu.
 
 
 def _json_safe(value):
@@ -52,7 +52,7 @@ def _json_safe(value):
     return value
 
 
-def _analyze_one(ticker: str, period: str, interval: str) -> dict:
+def _analyze_one(ticker: str, period: str, interval: str, indicators: list = None, num_bins: int = 60) -> dict:
     tmp_output = "/tmp/output"
     tmp_session = "/tmp/agent_session.json"
     os.makedirs(tmp_output, exist_ok=True)
@@ -63,6 +63,8 @@ def _analyze_one(ticker: str, period: str, interval: str) -> dict:
         interval=interval,
         output_dir=tmp_output,
         session_file=tmp_session,
+        indicators=indicators,
+        num_bins=num_bins,
     )
 
     chart_b64 = None
@@ -101,10 +103,24 @@ def analyze():
     period = body.get("period") or "12mo"
     interval = body.get("interval") or "1d"
 
+    indicators_raw = body.get("indicators") or []
+    if isinstance(indicators_raw, str):
+        indicators_raw = [indicators_raw]
+    allowed_indicators = {"tpo", "volume_profile", "vwap"}
+    indicators = [i for i in indicators_raw if isinstance(i, str) and i in allowed_indicators]
+
+    # Số tầng giá (bins) chia nhỏ TPO/Volume Profile - càng lớn thì cột/khối càng
+    # nhỏ & nhiều, chi tiết hơn. Giới hạn [20, 150] để tránh giá trị bất hợp lý.
+    try:
+        num_bins = int(body.get("num_bins") or 60)
+    except (TypeError, ValueError):
+        num_bins = 60
+    num_bins = max(20, min(150, num_bins))
+
     results = []
     for tk in tickers:
         try:
-            results.append(_analyze_one(tk, period, interval))
+            results.append(_analyze_one(tk, period, interval, indicators=indicators, num_bins=num_bins))
         except Exception as exc:  # noqa: BLE001
             results.append({
                 "ticker": tk,

@@ -133,6 +133,31 @@
         <select id="interval">
           <option value="1d" selected>Ngày (1d)</option>
           <option value="1wk">Tuần (1wk)</option>
+          <option value="15m">15 phút (15m) - Intraday AMT</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" id="amtRow">
+      <div class="field">
+        <label>Công cụ Auction Market Theory (TPO/Volume Profile áp dụng mọi khung thời gian; VWAP+Bands chỉ có ý nghĩa ở khung intraday, vd 15m)</label>
+        <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px; margin-right:16px;">
+          <input type="checkbox" id="indTpo" value="tpo" style="width:auto;" /> TPO Profile
+        </label>
+        <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px; margin-right:16px;">
+          <input type="checkbox" id="indVp" value="volume_profile" style="width:auto;" /> Volume Profile (SVP)
+        </label>
+        <label style="font-weight:400; display:inline-flex; align-items:center; gap:6px;">
+          <input type="checkbox" id="indVwap" value="vwap" style="width:auto;" /> Daily VWAP + Bands (±1σ/±2σ/±3σ, chỉ khung intraday)
+        </label>
+      </div>
+      <div class="field" style="max-width:220px;">
+        <label for="numBins">Độ chi tiết Profile (số tầng giá)</label>
+        <select id="numBins">
+          <option value="24">24 (thô, khối to)</option>
+          <option value="60" selected>60 (mặc định)</option>
+          <option value="100">100 (chi tiết)</option>
+          <option value="150">150 (rất chi tiết)</option>
         </select>
       </div>
     </div>
@@ -150,6 +175,10 @@
     const tickersEl = document.getElementById("tickers");
     const periodEl = document.getElementById("period");
     const intervalEl = document.getElementById("interval");
+    const indTpoEl = document.getElementById("indTpo");
+    const indVpEl = document.getElementById("indVp");
+    const indVwapEl = document.getElementById("indVwap");
+    const numBinsEl = document.getElementById("numBins");
     const statusEl = document.getElementById("status");
     const resultsEl = document.getElementById("results");
 
@@ -216,6 +245,14 @@
       return wrap;
     }
 
+    function selectedIndicators() {
+      const out = [];
+      if (indTpoEl.checked) out.push("tpo");
+      if (indVpEl.checked) out.push("volume_profile");
+      if (indVwapEl.checked) out.push("vwap");
+      return out;
+    }
+
     async function startAnalysis() {
       const tickers = parseTickers(tickersEl.value);
       if (!tickers.length) {
@@ -234,7 +271,9 @@
           body: JSON.stringify({
             tickers,
             period: periodEl.value,
-            interval: intervalEl.value
+            interval: intervalEl.value,
+            indicators: selectedIndicators(),
+            num_bins: parseInt(numBinsEl.value, 10)
           })
         });
 

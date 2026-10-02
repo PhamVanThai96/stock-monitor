@@ -43,21 +43,30 @@ import pandas as pd
 import yfinance as yf
 from scipy.signal import argrelextrema
 import telegram_script  # Module phụ trợ gửi ảnh qua Telegram
+import auction_market_theory as amt  # Bộ công cụ TPO / Session Volume Profile / Daily VWAP (AMT)
 
 # Thiết lập thư mục gốc
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Bộ công cụ AMT mặc định tự động hiển thị khi chạy script trực tiếp từ CLI
+# (không truyền `indicators`), áp dụng được cho MỌI khung thời gian. VWAP+Bands
+# KHÔNG nằm trong mặc định vì chỉ có ý nghĩa thống kê ở khung intraday.
+DEFAULT_AMT_INDICATORS = ["tpo", "volume_profile"]
 
 # ---------------------------------------------------------------------------
 # 1. Thu thập dữ liệu OHLCV (Khung Ngày)
 # ---------------------------------------------------------------------------
 def fetch_stock_data(ticker: str, period: str = "12mo", interval: str = "1d") -> pd.DataFrame:
-    """Tải dữ liệu OHLCV lịch sử theo NGÀY qua yfinance."""
+    """Tải dữ liệu OHLCV lịch sử qua yfinance (hỗ trợ cả khung ngày & khung intraday)."""
     t = yf.Ticker(ticker)
     df = t.history(period=period, interval=interval)
     if df.empty:
         raise ValueError(f"Không tải được dữ liệu cho mã {ticker}. Kiểm tra lại mã cổ phiếu.")
     df = df.reset_index()
-    df.columns = [c if c != "Date" else "Date" for c in df.columns]
+    # Với khung intraday (vd 15m), yfinance đặt tên cột thời gian là "Datetime" thay vì
+    # "Date" như khung ngày/tuần - cần chuẩn hoá về "Date" để tránh KeyError phía sau.
+    if "Datetime" in df.columns and "Date" not in df.columns:
+        df = df.rename(columns={"Datetime": "Date"})
     df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None)
     df = df[["Date", "Open", "High", "Low", "Close", "Volume"]].dropna().reset_index(drop=True)
     return df
@@ -736,13 +745,20 @@ def generate_recommendation_v2(df_ind: pd.DataFrame, channel: dict, sr: dict, bo
 # ---------------------------------------------------------------------------
 def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: list,
                         patterns: list, ticker: str, output_dir: str = "output",
-                        rec: dict = None) -> str:
+                        rec: dict = None, amt_result: dict = None, indicators: list = None,
+                        interval: str = None) -> str:
     """
     Xuất đồ thị nến kỹ thuật chuyên nghiệp 2 bảng con (Subplots) tương tự TradingView:
     - Bảng 1 (Chính, rộng): Nến Nhật, Kênh giá, Median Line, Hộp cam, MA9/26/50/200,
       Volume overlay (twinx nén ở đáy), Fibonacci nhịp breakout, nhãn Breakout,
       Annotations nến, Badge khuyến nghị, đường giá tham chiếu (hiện tại/TP/cutoff).
     - Bảng 2: Chỉ số RSI(14) và MFI(14) với các vùng 30/70.
+
+    `amt_result`/`indicators` (tùy chọn): kết quả của
+    `auction_market_theory.generate_amt_signals()` và danh sách công cụ AMT được
+    người dùng chọn (con của {"tpo", "volume_profile", "vwap"}) - khi có, sẽ vẽ
+    thêm TPO Profile (bên trái), Session Volume Profile (bên phải) và Daily VWAP
+    + dải độ lệch chuẩn (dọc theo nến) lên Bảng 1, đè lên hệ trục `ax1`.
     """
     import matplotlib
     matplotlib.use("Agg")  # backend không cần display, bắt buộc cho môi trường headless (vd: Netlify)
@@ -755,12 +771,25 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
     x = np.arange(n)
     future_bars = 10  # số cột trống dự phòng bên phải cho mũi tên dự báo & nhãn giá tham chiếu
 
-    fig, (ax1, ax3) = plt.subplots(
-        2, 1, figsize=(15, 9.5),
-        gridspec_kw={"height_ratios": [6.5, 2]},
-        sharex=True
+    # --- Bảng cuối (ax_rec): Panel Khuyến nghị TÁCH RIÊNG ra ngoài biểu đồ nến ---
+    # (trước đây text box khuyến nghị được đè trực tiếp lên góc trái ax1, có thể che
+    # mất nến/overlay AMT khi bật nhiều chỉ báo; nay dùng 1 subplot text-only riêng
+    # ở DƯỚI CÙNG, không chia sẻ trục X/Y với ax1 nên không bao giờ che biểu đồ).
+    # `ax_gap` là 1 hàng trống (ẩn trục) chèn giữa ax3 và ax_legend, chừa đủ khoảng
+    # trống cho nhãn ngày xoay nghiêng (rotation=25) của ax3 không bị đè lên.
+    # `ax_legend` là 1 hàng riêng (ẩn trục) chứa chú giải (legend) dạng ngang nhiều
+    # cột, gọn & nằm ở dưới cùng - thay cho cách cũ đặt bên phải ax1 (chiếm nhiều
+    # chiều ngang khiến ảnh xuất ra bị bbox_inches="tight" kéo rộng, làm vùng nến
+    # trong ảnh cuối cùng bị thu nhỏ tương đối khi hiển thị trên web).
+    fig, (ax1, ax3, ax_gap, ax_legend, ax_rec) = plt.subplots(
+        5, 1, figsize=(15, 12.6),
+        gridspec_kw={"height_ratios": [6.5, 2, 0.3, 1.0, 1.3]},
     )
-    plt.subplots_adjust(hspace=0.05)
+    ax1.sharex(ax3)
+    ax_gap.axis("off")
+    ax_legend.axis("off")
+    ax_rec.axis("off")
+    plt.subplots_adjust(hspace=0.08)
 
     # --- Bảng 1: Biểu đồ nến & Kênh giá ---
     up = df_ind["Close"] >= df_ind["Open"]
@@ -798,17 +827,17 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
     ax1.plot(x, df_ind["MA26"], color="magenta", linewidth=1.0, label="MA26")
     ax1.plot(x, df_ind["MA50"], color="orange", linewidth=1.2, label="MA50")
     if "MA200" in df_ind.columns and df_ind["MA200"].notna().any():
-        ax1.plot(x, df_ind["MA200"], color="purple", linewidth=1.5, label="MA200 (Baseline)")
+        ax1.plot(x, df_ind["MA200"], color="purple", linewidth=1.5, label="MA200")
 
     # Kênh giá
     if channel.get("valid"):
         u_line = np.array(channel["upper_line"])
         l_line = np.array(channel["lower_line"])
         m_line = np.array(channel.get("median_line", []))
-        ax1.plot(x, u_line, color="red", linestyle="--", linewidth=1.3, label="Biên trên kênh (Resistance)")
-        ax1.plot(x, l_line, color="green", linestyle="--", linewidth=1.3, label="Biên dưới kênh (Support)")
+        ax1.plot(x, u_line, color="red", linestyle="--", linewidth=1.3, label="Kháng cự (kênh trên)")
+        ax1.plot(x, l_line, color="green", linestyle="--", linewidth=1.3, label="Hỗ trợ (kênh dưới)")
         if len(m_line) == n:
-            ax1.plot(x, m_line, color="blue", linestyle=":", linewidth=1.0, alpha=0.8, label="Median Line")
+            ax1.plot(x, m_line, color="blue", linestyle=":", linewidth=1.0, alpha=0.8, label="Đường giữa kênh")
         # Tô bóng vùng kênh
         ax1.fill_between(x, l_line, u_line, color="purple", alpha=0.06)
 
@@ -833,6 +862,11 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
         ax1.axhline(y=sup["level"], color="darkblue", linestyle="-", linewidth=1.2, alpha=0.85)
     for res in sr.get("resistance_zones", [])[:2]:
         ax1.axhline(y=res["level"], color="darkred", linestyle="-", linewidth=1.2, alpha=0.85)
+
+    # --- Overlay Auction Market Theory: TPO (trái) / Session Volume Profile (phải) / VWAP+Bands ---
+    amt_margins = {"left_margin": 0, "right_margin": 0}
+    if indicators and amt_result:
+        amt_margins = amt.render_amt_overlays(ax1, n, amt_result, indicators)
 
     # --- Đường giá tham chiếu: Hiện tại (cam) / Take Profit (xanh lá) / Cut Loss (đỏ) ---
     # Đều là nét đứt mảnh (linewidth nhỏ) để không lấn át nến & kênh giá, đặt zorder cao để
@@ -954,33 +988,48 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
                 bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.8),
             )
 
-    # Badge khuyến nghị ở góc trái (bọc dòng dài để không tràn ra đè lên chú thích/legend)
+    # Panel Khuyến nghị: vẽ trên `ax_rec` (subplot text-only TÁCH RIÊNG phía trên biểu
+    # đồ nến) thay vì đè lên góc trái ax1 như trước - đảm bảo KHÔNG BAO GIỜ che mất
+    # nến/overlay AMT (TPO/Volume Profile/VWAP) dù khuyến nghị có nhiều dòng lý do.
     if rec:
         import textwrap
+        from datetime import datetime
         action = rec.get("action", "THEO DÕI")
         colors = {"MUA": "darkgreen", "BÁN": "red", "THEO DÕI": "#fbc02d"}
         text_color = "black" if action == "THEO DÕI" else "white"
         label = f"KHUYẾN NGHỊ: {action}"
+        # Chú thích khung thời gian (interval) của biểu đồ & thời điểm tạo khuyến nghị,
+        # giúp người xem biết khuyến nghị này áp dụng cho khung nào và còn mới hay cũ.
+        tf_label = interval or "N/A"
+        created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+        label += f"   |   Khung thời gian: {tf_label}   |   Tạo lúc: {created_at}"
         if rec.get("reasons"):
             for r in rec["reasons"][:3]:
-                wrapped = textwrap.fill(r, width=78)
+                wrapped = textwrap.fill(r, width=150)
                 label += "\n- " + wrapped.replace("\n", "\n  ")
         if action == "MUA":
             label += f"\n• Vùng mua: {rec['entry_zone'][0]:,} - {rec['entry_zone'][1]:,}"
             label += f"\n• TP1: {rec['tp1']:,} (R:R 1:{rec['risk_reward_tp1']}) | TP2: {rec['tp2']:,} (R:R 1:{rec['risk_reward_tp2']})"
             label += f"\n• Cắt lỗ: {rec['stop_loss']:,}"
 
-        ax1.text(
-            0.01, 0.98, label, transform=ax1.transAxes,
-            fontsize=8, fontweight="bold", color=text_color, va="top", ha="left",
+        ax_rec.text(
+            0.005, 0.95, label, transform=ax_rec.transAxes,
+            fontsize=9, fontweight="bold", color=text_color, va="top", ha="left",
             bbox=dict(boxstyle="round,pad=0.5", facecolor=colors.get(action, "gray"), edgecolor="black", alpha=0.92)
         )
 
     clean_tk = ticker.split(".")[0]
     ax1.set_title(f"{clean_tk} - Phân tích Kỹ thuật Định lượng, Kênh Xu hướng & Nến Nhật (v2.0)", fontsize=13, fontweight="bold")
-    # Đưa chú giải (legend) ra ngoài khung vẽ bên phải để không đè lên badge khuyến nghị,
-    # nhãn giá tham chiếu hay các annotation mô hình nến.
-    ax1.legend(loc="upper left", bbox_to_anchor=(1.005, 1.0), fontsize=8, ncol=1, borderaxespad=0.0)
+    # Chú giải (legend) đặt gọn ở hàng riêng `ax_legend` phía dưới cùng (dạng ngang
+    # nhiều cột, nhãn đã rút gọn) thay vì bên phải ax1 như trước - giải phóng chiều
+    # ngang cho vùng nến, tránh biểu đồ bị nén khi ảnh xuất ra có nhiều overlay AMT.
+    handles, labels = ax1.get_legend_handles_labels()
+    if handles:
+        ax_legend.legend(
+            handles, labels, loc="center", ncol=5, fontsize=7.5,
+            columnspacing=1.2, handlelength=1.6, handletextpad=0.5,
+            frameon=True, borderaxespad=0.2,
+        )
     ax1.grid(True, linestyle="--", alpha=0.4)
     ax1.set_ylabel("Giá (VNĐ)", fontsize=10)
 
@@ -999,7 +1048,8 @@ def plot_advanced_chart(df_ind: pd.DataFrame, channel: dict, sr: dict, boxes: li
     ax3.legend(loc="upper left", fontsize=8)
 
     # --- Bảng 1: Mũi tên dự báo xu hướng tương lai (Forecast Arrow) ---
-    ax1.set_xlim(-1, n + future_bars)
+    # xlim được mở rộng thêm theo amt_margins để chừa chỗ cho khối TPO (trái) / Volume Profile (phải).
+    ax1.set_xlim(-1 - amt_margins["left_margin"], n + future_bars + amt_margins["right_margin"])
     curr_x = n - 1
     curr_y = float(df_ind.iloc[-1]["Close"])
     action = rec.get("action", "THEO DÕI") if rec else "THEO DÕI"
@@ -1202,10 +1252,42 @@ def generate_advanced_mindmap(ticker: str, channel: dict, boxes: list, patterns:
 # ---------------------------------------------------------------------------
 def run_stock_analysis_skill(ticker: str, period: str = "12mo", interval: str = "1d",
                               output_dir: str = None, session_file: str = None,
-                              candle_order: int = 5, lookback: int = 8) -> dict:
-    """Chạy toàn bộ pipeline phân tích kỹ thuật v2.0 cho một mã cổ phiếu."""
+                              candle_order: int = 5, lookback: int = 8,
+                              indicators: list = None, tpo_bar_minutes: int = 15,
+                              num_bins: int = 60) -> dict:
+    """
+    Chạy toàn bộ pipeline phân tích kỹ thuật v2.0 cho một mã cổ phiếu.
+
+    `indicators` (tùy chọn): danh sách con của {"tpo", "volume_profile", "vwap"}
+    - bộ ba công cụ Auction Market Theory (AMT) người dùng chọn hiển thị trên UI
+    (checkbox). TPO Profile và Volume Profile (SVP) áp dụng được cho MỌI khung
+    `interval` (1d, 1wk, hoặc intraday như 15m); riêng VWAP+Bands chỉ có ý nghĩa
+    thống kê ở khung intraday (vì reset theo từng phiên).
+
+    `num_bins` (mặc định 60): số tầng giá chia nhỏ TPO/Volume Profile - tăng để
+    có cột/khối NHỎ và NHIỀU hơn (chi tiết hơn), giảm để có khối to/ít hơn (tổng
+    quan hơn). Xem `auction_market_theory.generate_amt_signals`.
+
+    MẶC ĐỊNH (khi `indicators=None`, vd chạy trực tiếp
+    `python3 stock_analysis_script.py <TICKER>` từ dòng lệnh): tự động bật
+    `DEFAULT_AMT_INDICATORS` = ["tpo", "volume_profile"] để luôn hiển thị 2 công
+    cụ này trên biểu đồ/`reasons`. Để TẮT hoàn toàn AMT, truyền `indicators=[]`
+    tường minh (đây là cách UI làm khi người dùng bỏ chọn hết checkbox).
+
+    Khi `indicators` có giá trị, pipeline sẽ:
+      1. Giới hạn lại `period` cho phù hợp nếu `interval` là intraday (tránh lỗi
+         rỗng dữ liệu từ Yahoo Finance khi period quá dài so với interval ngắn).
+      2. Tính TPO/Volume Profile/VWAP+Bands và sinh nhận định Kịch bản A/B (AMT),
+         gộp các nhận định này vào `rec["reasons"]`.
+      3. Vẽ đè các lớp overlay tương ứng lên biểu đồ nến (xem `render_amt_overlays`).
+    """
     output_dir = output_dir or os.path.join(PROJECT_ROOT, "output")
     session_file = session_file or os.path.join(PROJECT_ROOT, "ai-session", "agent_session.json")
+    # `None` (không truyền) -> mặc định bật TPO + Volume Profile; `[]` tường minh -> tắt AMT.
+    indicators = list(DEFAULT_AMT_INDICATORS) if indicators is None else indicators
+
+    # Giới hạn period phù hợp với interval intraday (vd "15m" chỉ cho phép tối đa ~60 ngày).
+    period = amt.resolve_period_for_interval(period, interval)
 
     # 1. Tải dữ liệu & tính chỉ báo
     df = fetch_stock_data(ticker, period=period, interval=interval)
@@ -1222,8 +1304,22 @@ def run_stock_analysis_skill(ticker: str, period: str = "12mo", interval: str = 
     sr = find_support_resistance(df, channel)
     rec = generate_recommendation_v2(df_ind, channel, sr, boxes, patterns)
 
-    # 5. Xuất biểu đồ 3 bảng con
-    chart_path = plot_advanced_chart(df_ind, channel, sr, boxes, patterns, ticker, output_dir=output_dir, rec=rec)
+    # 4b. Bộ ba công cụ Auction Market Theory (AMT): TPO / Session Volume Profile / VWAP+Bands
+    # (chỉ tính khi người dùng chọn ở UI qua checkbox "indicators"; gộp nhận định vào rec).
+    amt_result = None
+    if indicators:
+        amt_result = amt.generate_amt_signals(
+            df_ind, interval=interval, indicators=indicators, tpo_bar_minutes=tpo_bar_minutes,
+            num_bins=num_bins,
+        )
+        if amt_result.get("notes"):
+            rec["reasons"] = list(rec.get("reasons", [])) + amt_result["notes"]
+        if amt_result.get("entry_signal"):
+            rec["amt_entry_signal"] = amt_result["entry_signal"]
+
+    # 5. Xuất biểu đồ 3 bảng con (+ overlay AMT nếu có)
+    chart_path = plot_advanced_chart(df_ind, channel, sr, boxes, patterns, ticker, output_dir=output_dir,
+                                      rec=rec, amt_result=amt_result, indicators=indicators, interval=interval)
 
     # 6. Sơ đồ tư duy & Ghi log
     mindmap = generate_advanced_mindmap(ticker, channel, boxes, patterns, rec)
@@ -1238,7 +1334,8 @@ def run_stock_analysis_skill(ticker: str, period: str = "12mo", interval: str = 
     session_state.setdefault("watchlist", {})
     session_state["watchlist"][ticker] = {
         "last_run": datetime.now(timezone.utc).isoformat(),
-        "config": {"period": period, "interval": interval, "candle_order": candle_order, "lookback": lookback},
+        "config": {"period": period, "interval": interval, "candle_order": candle_order, "lookback": lookback,
+                   "indicators": indicators},
         "last_action": rec["action"],
         "last_close": rec["close"],
         "tp1": rec.get("tp1"),
@@ -1291,7 +1388,10 @@ def run_batch_analysis(config_file: str = None) -> dict:
                 period=cfg.get("period", "12mo"),
                 interval=cfg.get("interval", "1d"),
                 candle_order=cfg.get("candle_order", 5),
-                lookback=cfg.get("lookback", 8)
+                lookback=cfg.get("lookback", 8),
+                indicators=cfg.get("indicators"),
+                tpo_bar_minutes=cfg.get("tpo_bar_minutes", 15),
+                num_bins=cfg.get("num_bins", 60),
             )
         except Exception as e:
             errors[tk] = str(e)
