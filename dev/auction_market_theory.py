@@ -59,6 +59,14 @@ INTRADAY_MAX_PERIOD = {
     "1h": "730d",
 }
 
+def _period_to_days(period: str) -> float:
+  import re
+  m = re.match(r"^(\d+)(d|wk|mo|y)$", period.strip())
+  if not m:
+    return float("inf")
+  n, unit = int(m.group(1)), m.group(2)
+  factor = {"d":1, "wk":7, "mo":30, "y":365}[unit]
+  return n*factor
 
 def resolve_period_for_interval(period: str, interval: str) -> str:
     """
@@ -66,9 +74,10 @@ def resolve_period_for_interval(period: str, interval: str) -> str:
     period/interval mà Yahoo Finance sẽ trả về dữ liệu rỗng (vd period="12mo"
     với interval="15m" sẽ bị Yahoo từ chối vì chỉ cho phép tối đa ~60 ngày).
     """
-    if interval not in INTRADAY_INTERVALS:
+    max_period = INTRADAY_MAX_PERIOD.get(interval, "60d")
+    if _period_to_days(period) <= _period_to_days(max_period):
         return period
-    return INTRADAY_MAX_PERIOD.get(interval, "60d")
+    return max_period
 
 
 def is_intraday_interval(interval: str) -> bool:
