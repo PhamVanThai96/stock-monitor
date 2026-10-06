@@ -74,6 +74,10 @@ def resolve_period_for_interval(period: str, interval: str) -> str:
     period/interval mà Yahoo Finance sẽ trả về dữ liệu rỗng (vd period="12mo"
     với interval="15m" sẽ bị Yahoo từ chối vì chỉ cho phép tối đa ~60 ngày).
     """
+
+    if interval not in INTRADAY_INTERVALS:
+      return period
+      
     max_period = INTRADAY_MAX_PERIOD.get(interval, "60d")
     if _period_to_days(period) <= _period_to_days(max_period):
         return period
